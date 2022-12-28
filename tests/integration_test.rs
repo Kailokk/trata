@@ -14,13 +14,14 @@ fn main() {
 
     //atomic something?, make it static?
 
-    let mut timer = TrataTimer::new(&config);
+    let timer = TrataTimer::new(&config);
 
-    thread::spawn(|| {
-        timer.start_timer();
-    });
+    timer.start_timer();
 
     loop {
-        timer.play_pause_timer();
+        //get input
+        timer.pump_timer();
     }
+
+    
 }
