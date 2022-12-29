@@ -6,6 +6,7 @@
 
 ---
 # TODO
+- Create test case to validate countdown time is accurate
 - Clean naming
 - Documentation comments
 - Docs
