@@ -56,7 +56,8 @@ pub mod trata {
                 .duration_since(self.time_of_last_pump)
                 .unwrap();
 
-            self.remaining_time = self.remaining_time.checked_sub(since_last_pump).unwrap();
+            self.remaining_time = self.remaining_time - since_last_pump;
+
             (self.display_callback)(self.remaining_time);
             self.time_of_last_pump = SystemTime::now();
         }
@@ -64,8 +65,8 @@ pub mod trata {
         fn cycle_mode(&mut self) {
             match self.current_timer_mode {
                 TimerMode::Work => {
-                    self.work_sessions_since_break = self.work_sessions_since_break + 1;
-                    if self.work_sessions_since_break >= self.config.work_sessions_before_long_break
+                    self.work_sessions_since_break = self.work_sessions_since_break + (1 as u8);
+                    if self.work_sessions_since_break == self.config.work_sessions_before_long_break
                     {
                         self.current_timer_mode = TimerMode::LongBreak;
                         self.remaining_time = Duration::new(
@@ -83,14 +84,16 @@ pub mod trata {
                         return;
                     }
                 }
+
                 TimerMode::ShortBreak => {
                     self.current_timer_mode = TimerMode::Work;
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
-                    self.work_sessions_since_break = 0;
                     return;
                 }
+
                 TimerMode::LongBreak => {
+                    //should i quit?
                     self.current_timer_mode = TimerMode::Work;
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
@@ -109,14 +112,14 @@ pub mod trata {
         }
 
         pub fn end_section_early(&mut self) {
-            //change to next cycle
+            self.cycle_mode()
         }
         pub fn close_timer(&mut self) -> bool {
             true
         }
     }
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug, Clone)]
     pub enum TimerMode {
         Work,
         ShortBreak,
@@ -124,7 +127,7 @@ pub mod trata {
     }
 
     mod tests {
-        use std::time::Duration;
+        use std::{thread::current, time::Duration};
 
         use crate::trata::TimerMode;
 
@@ -143,18 +146,148 @@ pub mod trata {
         fn empty_callback(duration: Duration) {}
 
         #[test]
-        fn timer_methods() {
+        fn timer_startup() {
             let config = setup_config();
             let mut timer = TrataTimer::new(&config, empty_callback);
 
             timer.start_timer();
             assert!(timer.is_running);
 
-            assert!((timer.current_timer_mode == TimerMode::Work));
+            assert_eq!(timer.current_timer_mode, TimerMode::Work);
 
-            assert!(timer.remaining_time == Duration::new(1, 0));
+            assert_eq!(timer.remaining_time, Duration::new(60, 0));
 
-            assert
+            timer.close_timer();
+        }
+
+        #[test]
+        fn timer_cycle() {
+            let config = setup_config();
+            let mut timer = TrataTimer::new(&config, empty_callback);
+
+            assert_eq!(timer.current_timer_mode, TimerMode::Work);
+
+            timer.cycle_mode();
+            assert_eq!(timer.current_timer_mode, TimerMode::ShortBreak);
+
+            timer.cycle_mode();
+            assert_eq!(timer.current_timer_mode, TimerMode::Work);
+
+            timer.cycle_mode();
+            assert_eq!(
+                timer.current_timer_mode,
+                TimerMode::LongBreak,
+                "Sessions since break: {}, Config: {}",
+                timer.work_sessions_since_break,
+                timer.config.work_sessions_before_long_break
+            );
+        }
+
+        #[test]
+        fn timer_end_early() {
+            let config = setup_config();
+            let mut timer = TrataTimer::new(&config, empty_callback);
+            timer.start_timer();
+
+            timer.end_section_early();
+            assert_eq!(timer.current_timer_mode, TimerMode::ShortBreak);
+
+            timer.end_section_early();
+            assert_eq!(timer.current_timer_mode, TimerMode::Work);
+
+            timer.end_section_early();
+            assert_eq!(timer.current_timer_mode, TimerMode::LongBreak);
+        }
+
+        #[test]
+        fn timer_play_pause() {
+            let config = setup_config();
+            let mut timer = TrataTimer::new(&config, empty_callback);
+            timer.start_timer();
+
+            timer.play_pause_timer();
+            assert!(!(timer.is_running));
+            timer.play_pause_timer();
+            assert!(timer.is_running);
+        }
+
+        fn run_timer(timer: &mut TrataTimer) {
+            let held_timer_mode = timer.current_timer_mode.clone();
+
+            loop {
+                timer.pump_timer();
+                if timer.current_timer_mode != held_timer_mode {
+                    break;
+                }
+                if timer.remaining_time < Duration::new(0, 0) {
+                    panic!("Timer ran out but mode didn't change");
+                }
+            }
+        }
+
+        #[test]
+        #[ignore]
+        fn timer_pump() {
+            let config = setup_config();
+            let mut timer = TrataTimer::new(&config, empty_callback);
+            timer.start_timer();
+
+            //Timer started, should be in work mode
+            assert_eq!(
+                timer.current_timer_mode,
+                TimerMode::Work,
+                "Timer just started, should be in work mode."
+            );
+            assert_eq!(
+                timer.remaining_time,
+                Duration::new(60, 0),
+                "Default config defines each timer mode as one minute."
+            );
+
+            timer.remaining_time = Duration::new(1, 0);
+            run_timer(&mut timer);
+
+            //Finished first work session, timer should enter a short break
+            assert_eq!(
+                timer.current_timer_mode,
+                TimerMode::ShortBreak,
+                "Timer finished a work session, should be in short break mode."
+            );
+            assert_eq!(
+                timer.remaining_time,
+                Duration::new(60, 0),
+                "Default config defines each timer mode as one minute."
+            );
+
+            timer.remaining_time = Duration::new(1, 0);
+            run_timer(&mut timer);
+
+            //finished first short break, timer should enter work mode
+            assert_eq!(
+                timer.current_timer_mode,
+                TimerMode::Work,
+                "Finished the first short break, should be in work mode."
+            );
+            assert_eq!(
+                timer.remaining_time,
+                Duration::new(60, 0),
+                "Default config defines each timer mode as one minute."
+            );
+
+            timer.remaining_time = Duration::new(1, 0);
+            run_timer(&mut timer);
+
+            //finished second work session, should enter long break
+            assert_eq!(
+                timer.current_timer_mode,
+                TimerMode::LongBreak,
+                "Finished second work mode, should be in Long Break mode."
+            );
+            assert_eq!(
+                timer.remaining_time,
+                Duration::new(60, 0),
+                "Default config defines each timer mode as one minute."
+            );
         }
     }
 }
