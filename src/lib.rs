@@ -1,6 +1,7 @@
 pub mod trata {
     use std::error::Error;
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
     #[derive(Clone)]
     pub struct Config {
         pub work_time_length_in_minutes: u8,
@@ -25,7 +26,7 @@ pub mod trata {
         pub fn new(configuration: &Config, callback: fn(Duration)) -> TrataTimer {
             TrataTimer {
                 config: configuration.clone(),
-                current_timer_mode: TimerMode::work,
+                current_timer_mode: TimerMode::Work,
                 is_running: false,
                 remaining_time: Duration::new(
                     (configuration.work_time_length_in_minutes as u64) * 60,
@@ -62,11 +63,11 @@ pub mod trata {
 
         fn cycle_mode(&mut self) {
             match self.current_timer_mode {
-                TimerMode::work => {
+                TimerMode::Work => {
                     self.work_sessions_since_break = self.work_sessions_since_break + 1;
                     if self.work_sessions_since_break >= self.config.work_sessions_before_long_break
                     {
-                        self.current_timer_mode = TimerMode::long_break;
+                        self.current_timer_mode = TimerMode::LongBreak;
                         self.remaining_time = Duration::new(
                             (self.config.long_break_length_in_minutes as u64) * 60,
                             0,
@@ -74,7 +75,7 @@ pub mod trata {
                         self.work_sessions_since_break = 0;
                         return;
                     } else {
-                        self.current_timer_mode = TimerMode::short_break;
+                        self.current_timer_mode = TimerMode::ShortBreak;
                         self.remaining_time = Duration::new(
                             (self.config.short_break_length_in_minutes as u64) * 60,
                             0,
@@ -82,15 +83,15 @@ pub mod trata {
                         return;
                     }
                 }
-                TimerMode::short_break => {
-                    self.current_timer_mode = TimerMode::work;
+                TimerMode::ShortBreak => {
+                    self.current_timer_mode = TimerMode::Work;
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
                     self.work_sessions_since_break = 0;
                     return;
                 }
-                TimerMode::long_break => {
-                    self.current_timer_mode = TimerMode::work;
+                TimerMode::LongBreak => {
+                    self.current_timer_mode = TimerMode::Work;
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
                     self.work_sessions_since_break = 0;
@@ -115,10 +116,46 @@ pub mod trata {
         }
     }
 
+    #[derive(PartialEq)]
     pub enum TimerMode {
-        work,
-        short_break,
-        long_break,
+        Work,
+        ShortBreak,
+        LongBreak,
+    }
+
+    mod tests {
+        use std::time::Duration;
+
+        use crate::trata::TimerMode;
+
+        use super::{Config, TrataTimer};
+
+        fn setup_config() -> Config {
+            Config {
+                work_time_length_in_minutes: 1,
+                short_break_length_in_minutes: 1,
+                long_break_length_in_minutes: 1,
+                should_have_long_break: true,
+                work_sessions_before_long_break: 2,
+            }
+        }
+
+        fn empty_callback(duration: Duration) {}
+
+        #[test]
+        fn timer_methods() {
+            let config = setup_config();
+            let mut timer = TrataTimer::new(&config, empty_callback);
+
+            timer.start_timer();
+            assert!(timer.is_running);
+
+            assert!((timer.current_timer_mode == TimerMode::Work));
+
+            assert!(timer.remaining_time == Duration::new(1, 0));
+
+            assert
+        }
     }
 }
 
