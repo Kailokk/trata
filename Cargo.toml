@@ -3,3 +3,5 @@ name = "trata"
 version = "0.1.0"
 edition = "2021"
 
+[dev-dependencies]
+crossterm = "0.25.0"

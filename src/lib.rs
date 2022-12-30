@@ -1,6 +1,5 @@
 pub mod trata {
-    use std::error::Error;
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use std::time::{Duration, SystemTime};
 
     #[derive(Clone)]
     pub struct Config {
@@ -17,13 +16,13 @@ pub mod trata {
         is_running: bool,
         remaining_time: Duration,
         time_of_last_pump: SystemTime,
-        display_callback: fn(Duration),
+        display_callback: fn(Duration, &TimerMode),
         work_sessions_since_break: u8,
     }
 
     impl TrataTimer {
         //should take an anoymous function as a timer callback
-        pub fn new(configuration: &Config, callback: fn(Duration)) -> TrataTimer {
+        pub fn new(configuration: &Config, callback: fn(Duration, &TimerMode)) -> TrataTimer {
             TrataTimer {
                 config: configuration.clone(),
                 current_timer_mode: TimerMode::Work,
@@ -47,25 +46,27 @@ pub mod trata {
                 return;
             }
 
-            if self.remaining_time.is_zero() {
+            if self.remaining_time <= Duration::ZERO {
                 self.cycle_mode();
                 return;
             }
 
+            //need to error check
             let since_last_pump: Duration = SystemTime::now()
                 .duration_since(self.time_of_last_pump)
                 .unwrap();
 
-            self.remaining_time = self.remaining_time - since_last_pump;
+            //throws an error when timer hits zero
+            self.remaining_time -= since_last_pump;
 
-            (self.display_callback)(self.remaining_time);
+            (self.display_callback)(self.remaining_time, &self.current_timer_mode);
             self.time_of_last_pump = SystemTime::now();
         }
 
         fn cycle_mode(&mut self) {
             match self.current_timer_mode {
                 TimerMode::Work => {
-                    self.work_sessions_since_break = self.work_sessions_since_break + (1 as u8);
+                    self.work_sessions_since_break += 1_u8;
                     if self.work_sessions_since_break == self.config.work_sessions_before_long_break
                     {
                         self.current_timer_mode = TimerMode::LongBreak;
@@ -74,14 +75,12 @@ pub mod trata {
                             0,
                         );
                         self.work_sessions_since_break = 0;
-                        return;
                     } else {
                         self.current_timer_mode = TimerMode::ShortBreak;
                         self.remaining_time = Duration::new(
                             (self.config.short_break_length_in_minutes as u64) * 60,
                             0,
                         );
-                        return;
                     }
                 }
 
@@ -89,7 +88,6 @@ pub mod trata {
                     self.current_timer_mode = TimerMode::Work;
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
-                    return;
                 }
 
                 TimerMode::LongBreak => {
@@ -98,7 +96,6 @@ pub mod trata {
                     self.remaining_time =
                         Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0);
                     self.work_sessions_since_break = 0;
-                    return;
                 }
             }
         }
@@ -114,9 +111,6 @@ pub mod trata {
         pub fn end_section_early(&mut self) {
             self.cycle_mode()
         }
-        pub fn close_timer(&mut self) -> bool {
-            true
-        }
     }
 
     #[derive(PartialEq, Debug, Clone)]
@@ -126,12 +120,19 @@ pub mod trata {
         LongBreak,
     }
 
+    impl TimerMode {
+        pub fn get_string(&self) -> String {
+            match self {
+                TimerMode::Work => "Work".to_string(),
+                TimerMode::ShortBreak => "Short Break".to_string(),
+                TimerMode::LongBreak => "Long Break".to_string(),
+            }
+        }
+    }
+
+    #[cfg(test)]
     mod tests {
-        use std::{thread::current, time::Duration};
-
-        use crate::trata::TimerMode;
-
-        use super::{Config, TrataTimer};
+        use super::*;
 
         fn setup_config() -> Config {
             Config {
@@ -143,7 +144,21 @@ pub mod trata {
             }
         }
 
-        fn empty_callback(duration: Duration) {}
+        fn run_timer(timer: &mut TrataTimer) {
+            let held_timer_mode = timer.current_timer_mode.clone();
+
+            loop {
+                timer.pump_timer();
+                if timer.current_timer_mode != held_timer_mode {
+                    break;
+                }
+                if timer.remaining_time < Duration::new(0, 0) {
+                    panic!("Timer ran out but mode didn't change");
+                }
+            }
+        }
+
+        fn empty_callback(duration: Duration, mode: &TimerMode) {}
 
         #[test]
         fn timer_startup() {
@@ -156,8 +171,6 @@ pub mod trata {
             assert_eq!(timer.current_timer_mode, TimerMode::Work);
 
             assert_eq!(timer.remaining_time, Duration::new(60, 0));
-
-            timer.close_timer();
         }
 
         #[test]
@@ -209,20 +222,6 @@ pub mod trata {
             assert!(!(timer.is_running));
             timer.play_pause_timer();
             assert!(timer.is_running);
-        }
-
-        fn run_timer(timer: &mut TrataTimer) {
-            let held_timer_mode = timer.current_timer_mode.clone();
-
-            loop {
-                timer.pump_timer();
-                if timer.current_timer_mode != held_timer_mode {
-                    break;
-                }
-                if timer.remaining_time < Duration::new(0, 0) {
-                    panic!("Timer ran out but mode didn't change");
-                }
-            }
         }
 
         #[test]
