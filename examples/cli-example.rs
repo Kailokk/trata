@@ -6,7 +6,7 @@ use trata::trata::{Config, TimerMode, TrataTimer};
 
 fn main() {
     let config = setup_config();
-    let mut timer = TrataTimer::new(&config, display);
+    let mut timer = TrataTimer::new(&config, display, timer_end_callback);
 
     timer.start_timer();
 
@@ -19,9 +19,9 @@ fn main() {
             })) = event::read()
             {
                 match c {
-                    'q' => break,
-                    'p' => timer.play_pause_timer(),
-                    's' => timer.end_section_early(),
+                    'q' | 'Q' => break,
+                    'p' | 'P' => timer.play_pause_timer(),
+                    's' | 'S' => timer.end_section_early(),
                     _ => {}
                 }
             }
@@ -34,7 +34,7 @@ fn main() {
 }
 
 //display callback
-fn display(duration: Duration, mode: &TimerMode) {
+fn display(duration: Duration, mode: &TimerMode, timer_is_running: bool) {
     //clears the screen
     print!("\x1B[2J\x1B[1;1H");
 
@@ -43,9 +43,17 @@ fn display(duration: Duration, mode: &TimerMode) {
     let seconds = duration.as_secs() % 60;
 
     //prints the time remaining in seconds
-    println!("{}:{}", minutes, seconds);
-    println!("Mode: {}", mode.get_string())
+    println!("{:0>2}:{:0>2}", minutes, seconds);
+
+    if timer_is_running {
+        println!("Mode: {}", mode.get_string());
+    } else {
+        println!("Mode: {} (Paused)", mode.get_string());
+    }
+    println!("Press Q to quit, S to end current timer early, & P to pause the timer.");
 }
+
+fn timer_end_callback(mode: &TimerMode) {}
 
 fn setup_config() -> Config {
     Config {
@@ -53,6 +61,7 @@ fn setup_config() -> Config {
         short_break_length_in_minutes: 1,
         long_break_length_in_minutes: 1,
         should_have_long_break: true,
+        should_immediately_transition: false,
         work_sessions_before_long_break: 2,
     }
 }
