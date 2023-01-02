@@ -6,8 +6,6 @@
 
 ---
 # TODO
-- Create test case to validate countdown time is accurate
-- Remove unwraps and expects
 - Clean naming
 - Package CLI example
 - Documentation comments

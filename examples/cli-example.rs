@@ -57,11 +57,11 @@ fn timer_end_callback(mode: &TimerMode) {}
 
 fn setup_config() -> Config {
     Config {
-        work_time_length_in_minutes: 1,
-        short_break_length_in_minutes: 1,
-        long_break_length_in_minutes: 1,
-        should_have_long_break: true,
-        should_immediately_transition: false,
+        work_length_minutes: 1,
+        short_break_length_minutes: 1,
+        long_break_length_minutes: 1,
+        has_long_break: true,
+        timer_mode_will_rollover: false,
         work_sessions_before_long_break: 2,
     }
 }

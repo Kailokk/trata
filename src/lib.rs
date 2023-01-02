@@ -3,11 +3,11 @@ pub mod trata {
 
     #[derive(Clone)]
     pub struct Config {
-        pub work_time_length_in_minutes: u8,
-        pub short_break_length_in_minutes: u8,
-        pub long_break_length_in_minutes: u8,
-        pub should_have_long_break: bool,
-        pub should_immediately_transition: bool,
+        pub work_length_minutes: u8,
+        pub short_break_length_minutes: u8,
+        pub long_break_length_minutes: u8,
+        pub has_long_break: bool,
+        pub timer_mode_will_rollover: bool,
         pub work_sessions_before_long_break: u8,
     }
 
@@ -33,10 +33,10 @@ pub mod trata {
         current_timer_mode: TimerMode,
         is_running: bool,
         remaining_time: Duration,
+        work_sessions_since_break: u8,
         time_of_last_pump: SystemTime,
         display_callback: fn(Duration, &TimerMode, bool),
         end_of_timer_callback: fn(&TimerMode),
-        work_sessions_since_break: u8,
     }
 
     impl TrataTimer {
@@ -49,10 +49,7 @@ pub mod trata {
                 config: configuration.clone(),
                 current_timer_mode: TimerMode::Work,
                 is_running: false,
-                remaining_time: Duration::new(
-                    (configuration.work_time_length_in_minutes as u64) * 60,
-                    0,
-                ),
+                remaining_time: Duration::new((configuration.work_length_minutes as u64) * 60, 0),
                 time_of_last_pump: SystemTime::now(),
                 display_callback: count_down_callback,
                 end_of_timer_callback: rest_timer_callback,
@@ -76,9 +73,11 @@ pub mod trata {
                 return;
             }
 
-            let since_last_pump: Duration = SystemTime::now()
-                .duration_since(self.time_of_last_pump)
-                .unwrap();
+            let since_last_pump: Duration =
+                match SystemTime::now().duration_since(self.time_of_last_pump) {
+                    Ok(value) => value,
+                    Err(_) => panic!("Error calculating time since last pump."),
+                };
 
             self.remaining_time = match self.remaining_time.checked_sub(since_last_pump) {
                 Some(value) => value,
@@ -127,7 +126,7 @@ pub mod trata {
                 }
             }
 
-            if !self.config.should_immediately_transition {
+            if !self.config.timer_mode_will_rollover {
                 self.is_running = false;
             }
 
@@ -145,15 +144,15 @@ pub mod trata {
             match new_mode {
                 TimerMode::Work => {
                     self.remaining_time =
-                        Duration::new((self.config.work_time_length_in_minutes as u64) * 60, 0)
+                        Duration::new((self.config.work_length_minutes as u64) * 60, 0)
                 }
                 TimerMode::ShortBreak => {
                     self.remaining_time =
-                        Duration::new((self.config.long_break_length_in_minutes as u64) * 60, 0)
+                        Duration::new((self.config.long_break_length_minutes as u64) * 60, 0)
                 }
                 TimerMode::LongBreak => {
                     self.remaining_time =
-                        Duration::new((self.config.short_break_length_in_minutes as u64) * 60, 0)
+                        Duration::new((self.config.short_break_length_minutes as u64) * 60, 0)
                 }
             }
         }
@@ -178,7 +177,7 @@ pub mod trata {
 
         pub fn end_section_early(&mut self) {
             self.cycle_mode();
-            if !self.config.should_immediately_transition {
+            if !self.config.timer_mode_will_rollover {
                 self.is_running = false;
             }
         }
@@ -186,15 +185,16 @@ pub mod trata {
 
     #[cfg(test)]
     mod tests {
+
         use super::*;
 
         fn setup_config() -> Config {
             Config {
-                work_time_length_in_minutes: 1,
-                short_break_length_in_minutes: 1,
-                long_break_length_in_minutes: 1,
-                should_have_long_break: true,
-                should_immediately_transition: true,
+                work_length_minutes: 1,
+                short_break_length_minutes: 1,
+                long_break_length_minutes: 1,
+                has_long_break: true,
+                timer_mode_will_rollover: true,
                 work_sessions_before_long_break: 2,
             }
         }
@@ -349,11 +349,11 @@ pub mod trata {
         #[ignore]
         fn timer_rollover() {
             let conf = Config {
-                work_time_length_in_minutes: 1,
-                short_break_length_in_minutes: 1,
-                long_break_length_in_minutes: 1,
-                should_have_long_break: true,
-                should_immediately_transition: false,
+                work_length_minutes: 1,
+                short_break_length_minutes: 1,
+                long_break_length_minutes: 1,
+                has_long_break: true,
+                timer_mode_will_rollover: false,
                 work_sessions_before_long_break: 2,
             };
 
