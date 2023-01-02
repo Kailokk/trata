@@ -1,6 +1,7 @@
 pub mod trata {
     use std::time::{Duration, SystemTime};
 
+    ///A struct used as the input configuration of a trata timer.
     #[derive(Clone)]
     pub struct Config {
         pub work_length_minutes: u8,
@@ -11,6 +12,7 @@ pub mod trata {
         pub work_sessions_before_long_break: u8,
     }
 
+    ///The distinct modes that a pomodoro timer can be in.
     #[derive(PartialEq, Debug, Clone)]
     pub enum TimerMode {
         Work,
@@ -19,6 +21,7 @@ pub mod trata {
     }
 
     impl TimerMode {
+        ///Converts the timer mode into a string for ease of display.
         pub fn get_string(&self) -> String {
             match self {
                 TimerMode::Work => "Work".to_string(),
@@ -28,6 +31,7 @@ pub mod trata {
         }
     }
 
+    ///A pomodoro timer struct. Contains methods for running the timer.
     pub struct TrataTimer {
         config: Config,
         current_timer_mode: TimerMode,
@@ -40,6 +44,7 @@ pub mod trata {
     }
 
     impl TrataTimer {
+        ///Takes a Config object and returns a timer that implements it.
         pub fn new(
             configuration: &Config,
             count_down_callback: fn(Duration, &TimerMode, bool),
@@ -57,10 +62,18 @@ pub mod trata {
             }
         }
 
+        ///Sets the timer to a running state. If you wish the timer to begin display while paused, don't call. 
+        ///This does not allow the timer to run. In order to run the timer you must loop over the pump function.
         pub fn start_timer(&mut self) {
             self.is_running = true;
+            (self.display_callback)(
+                self.remaining_time,
+                &self.current_timer_mode,
+                self.is_running,
+            );
         }
 
+        ///Allows the timer to update. Include in a repeating loop.
         pub fn pump_timer(&mut self) {
             if !self.is_running {
                 self.time_of_last_pump = SystemTime::now();
@@ -157,6 +170,7 @@ pub mod trata {
             }
         }
 
+        ///Toggles the timer between running, and paused.
         pub fn play_pause_timer(&mut self) {
             if self.is_running {
                 self.is_running = false;
@@ -175,6 +189,7 @@ pub mod trata {
             }
         }
 
+        ///Ends the 
         pub fn end_section_early(&mut self) {
             self.cycle_mode();
             if !self.config.timer_mode_will_rollover {

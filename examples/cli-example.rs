@@ -4,6 +4,17 @@ use crossterm::event::{self, poll, Event, KeyCode, KeyEvent};
 use std::time::Duration;
 use trata::trata::{Config, TimerMode, TrataTimer};
 
+fn setup_config() -> Config {
+    Config {
+        work_length_minutes: 20,
+        short_break_length_minutes: 5,
+        long_break_length_minutes: 30,
+        has_long_break: true,
+        timer_mode_will_rollover: false,
+        work_sessions_before_long_break: 2,
+    }
+}
+
 fn main() {
     let config = setup_config();
     let mut timer = TrataTimer::new(&config, display, timer_end_callback);
@@ -53,15 +64,6 @@ fn display(duration: Duration, mode: &TimerMode, timer_is_running: bool) {
     println!("Press Q to quit, S to end current timer early, & P to pause the timer.");
 }
 
-fn timer_end_callback(mode: &TimerMode) {}
-
-fn setup_config() -> Config {
-    Config {
-        work_length_minutes: 1,
-        short_break_length_minutes: 1,
-        long_break_length_minutes: 1,
-        has_long_break: true,
-        timer_mode_will_rollover: false,
-        work_sessions_before_long_break: 2,
-    }
+fn timer_end_callback(mode: &TimerMode) {
+    print!("\x07");
 }
