@@ -9,7 +9,7 @@ insert image here
 
 You use **Trata** by first creating a config object:
 ```rust
- Config {
+ let config = Config {
         work_length_minutes: 20,
         short_break_length_minutes: 5,
         long_break_length_minutes: 30,
@@ -20,17 +20,7 @@ You use **Trata** by first creating a config object:
 ```
 Here you can set the various config settings for the timer, before passing it into the `new` function in **TrataTimer**:
 ```rust
- let config = Config {
-        work_length_minutes: 20,
-        short_break_length_minutes: 5,
-        long_break_length_minutes: 30,
-        has_long_break: true,
-        timer_mode_will_rollover: false,
-        work_sessions_before_long_break: 2,
-    }
-
  let mut timer = TrataTimer::new(&config, display, timer_end_callback);
-
 ```
 The **TrataTimer** must be continuously pumped in order to function:
 ```rust
@@ -39,7 +29,7 @@ loop {
 }
 ```
 
-Within this loop you could also allow for control inputs in the timer (example using crossterm):
+Within this loop you could also allow for control inputs in the timer (example using crossterm)[examples/cli-example.rs]:
 ```rust
 fn main() {
     let config = setup_config();
@@ -102,10 +92,10 @@ fn timer_end_callback(mode: &TimerMode) {
 //Image here please
 
 ## Contribution/Feedback
-Any contributions or feedback are very welcome!
+//Any contributions or feedback are very welcome!
 
 ## License
-link to licence
+//link to licence
 
 
 ---
