@@ -17,7 +17,7 @@ fn setup_config() -> Config {
 
 fn main() {
     let config = setup_config();
-    let mut timer = TrataTimer::new(&config, display, timer_end_callback);
+    let mut timer = TrataTimer::new(&config, display_callback, timer_end_callback);
 
     timer.start_timer();
 
@@ -45,7 +45,7 @@ fn main() {
 }
 
 //display callback
-fn display(duration: Duration, mode: &TimerMode, timer_is_running: bool) {
+fn display_callback(duration: Duration, mode: &TimerMode, timer_is_running: bool) {
     //clears the screen
     print!("\x1B[2J\x1B[1;1H");
 
@@ -64,6 +64,8 @@ fn display(duration: Duration, mode: &TimerMode, timer_is_running: bool) {
     println!("Press Q to quit, S to end current timer early, & P to pause the timer.");
 }
 
+
 fn timer_end_callback(mode: &TimerMode) {
+    //bell character
     print!("\x07");
 }
