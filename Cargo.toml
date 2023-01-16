@@ -2,6 +2,15 @@
 name = "trata"
 version = "0.1.0"
 edition = "2021"
+exclude = ["examples/"]
+authors = ["Kailokk <kailokk.converse@gmail.com>"]
+license = "Apache-2.0"
+description = "A pomodoro-timer library"
+readme = "README.md"
+homepage = "https://github.com/Kailokk"
+repository = "https://github.com/Kailokk/trata"
+keywords = ["pomodoro", "timer", "trata","pomodoro method"]
+categories = ["Date-and-time"]
 
 [dev-dependencies]
 crossterm = "0.25.0"

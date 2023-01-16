@@ -29,7 +29,7 @@ loop {
 }
 ```
 
-Within this loop you could also allow for control inputs in the timer (example using crossterm)[examples/cli-example.rs]:
+Within this loop you could also allow for control inputs in the timer [example using crossterm](examples/cli-example.rs):
 ```rust
 fn main() {
     let config = setup_config();
@@ -89,17 +89,18 @@ fn timer_end_callback(mode: &TimerMode) {
     print!("\x07");
 }
 ```
+//more info on timer mode
+
 //Image here please
 
 ## Contribution/Feedback
-//Any contributions or feedback are very welcome!
+Any contributions or feedback are very welcome!
 
 ## License
-//link to licence
+[Apache 2.0](LICENSE.MD)
 
 
 ---
 # TODO
-- Make sure examples folder excluded from build
-- Docs
+- Crates info
 - Update Readme

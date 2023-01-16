@@ -62,7 +62,7 @@ pub mod trata {
             }
         }
 
-        ///Sets the timer to a running state. If you wish the timer to begin display while paused, don't call. 
+        ///Sets the timer to a running state. If you wish the timer to begin display while paused, don't call.
         ///This does not allow the timer to run. In order to run the timer you must loop over the pump function.
         pub fn start_timer(&mut self) {
             self.is_running = true;
@@ -91,6 +91,9 @@ pub mod trata {
                     Ok(value) => value,
                     Err(_) => panic!("Error calculating time since last pump."),
                 };
+            if since_last_pump < Duration::new(0, 1000000000) {
+                return;
+            }
 
             self.remaining_time = match self.remaining_time.checked_sub(since_last_pump) {
                 Some(value) => value,
@@ -161,11 +164,11 @@ pub mod trata {
                 }
                 TimerMode::ShortBreak => {
                     self.remaining_time =
-                        Duration::new((self.config.long_break_length_minutes as u64) * 60, 0)
+                        Duration::new((self.config.short_break_length_minutes as u64) * 60, 0)
                 }
                 TimerMode::LongBreak => {
                     self.remaining_time =
-                        Duration::new((self.config.short_break_length_minutes as u64) * 60, 0)
+                        Duration::new((self.config.long_break_length_minutes as u64) * 60, 0)
                 }
             }
         }
@@ -189,7 +192,7 @@ pub mod trata {
             }
         }
 
-        ///Ends the 
+        ///Ends the
         pub fn end_section_early(&mut self) {
             self.cycle_mode();
             if !self.config.timer_mode_will_rollover {
