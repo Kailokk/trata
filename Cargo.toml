@@ -1,6 +1,6 @@
 [package]
 name = "trata"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 exclude = ["examples/", "assets/"]
 authors = ["Kailokk <kailokk.converse@gmail.com>"]
