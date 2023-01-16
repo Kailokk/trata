@@ -1,6 +1,6 @@
 # Trata Pomodoro Timer
 ### A rust based pomodoro timer library
-insert image here
+<img src="./assets/DisplayGifOne.gif" alt="Demo on windows terminal">
 
 ## Installation
  how to install
@@ -89,9 +89,6 @@ fn timer_end_callback(mode: &TimerMode) {
     print!("\x07");
 }
 ```
-//more info on timer mode
-
-//Image here please
 
 ## Contribution/Feedback
 Any contributions or feedback are very welcome!
@@ -99,8 +96,6 @@ Any contributions or feedback are very welcome!
 ## License
 [Apache 2.0](LICENSE.MD)
 
-
 ---
 # TODO
 - Crates info
-- Update Readme
