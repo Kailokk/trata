@@ -9,7 +9,7 @@ description = "A pomodoro-timer library"
 readme = "README.md"
 homepage = "https://github.com/Kailokk"
 repository = "https://github.com/Kailokk/trata"
-keywords = ["pomodoro", "timer", "trata","pomodoro method"]
+keywords = ["pomodoro", "timer", "trata","pomodoroTimer"]
 categories = ["Date-and-time"]
 
 [dev-dependencies]
