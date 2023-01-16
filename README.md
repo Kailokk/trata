@@ -2,9 +2,6 @@
 ### A rust based pomodoro timer library
 <img src="./assets/DisplayGifOne.gif" alt="Demo on windows terminal">
 
-## Installation
- how to install
-
 ## How To Use
 
 You use **Trata** by first creating a config object:
@@ -97,5 +94,3 @@ Any contributions or feedback are very welcome!
 [Apache 2.0](LICENSE.MD)
 
 ---
-# TODO
-- Crates info
