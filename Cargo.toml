@@ -12,5 +12,8 @@ repository = "https://github.com/Kailokk/trata"
 keywords = ["pomodoro", "timer", "trata","pomodoroTimer"]
 categories = ["Date-and-time"]
 
+[dependencies]
+chrono = "0.4.31"
+
 [dev-dependencies]
 crossterm = "0.25.0"
