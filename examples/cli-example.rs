@@ -1,9 +1,12 @@
-extern crate crossterm;
+//extern crate crossterm;
 
-use crossterm::event::{self, poll, Event, KeyCode, KeyEvent};
-use std::time::Duration;
-use trata::trata::{Config, TimerMode, TrataTimer};
+//use crossterm::event::{self, poll, Event, KeyCode, KeyEvent};
+//use std::time::Duration;
+//use trata::trata::{Config, TimerMode, TrataTimer};
 
+fn main() {}
+
+/*
 fn setup_config() -> Config {
     Config {
         work_length_minutes: 20,
@@ -64,8 +67,7 @@ fn display_callback(duration: Duration, mode: &TimerMode, timer_is_running: bool
     println!("Press Q to quit, S to end current timer early, & P to pause the timer.");
 }
 
-
 fn timer_end_callback(mode: &TimerMode) {
     //bell character
     print!("\x07");
-}
+}*/

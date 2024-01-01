@@ -1,5 +1,5 @@
 pub mod trata {
-    use std::ops::Add;
+    use std::ops::{Add, AddAssign};
 
     use chrono::{DateTime, Duration, TimeZone, Utc};
     /*    use std::time::{Duration, SystemTime};
@@ -205,72 +205,108 @@ pub mod trata {
         }
     */
     pub struct Timer {
-        length: chrono::Duration,
-        start_time: Option<DateTime<Utc>>,
-        paused: bool,
+        start_time: DateTime<Utc>,
+        expected_end_time: DateTime<Utc>,
+        time_of_pause: Option<DateTime<Utc>>,
     }
+
     impl Timer {
-        pub fn new(length: Duration) -> Timer {
+        pub fn start_from_duration(length: Duration) -> Timer {
+            let now = Utc::now();
             return Timer {
-                length: length,
-                start_time: None,
-                paused: false,
+                start_time: now,
+                expected_end_time: now + length,
+                time_of_pause: None,
             };
         }
 
         pub fn get_timer_state(&self) -> TimerState {
-            let start_time = match self.start_time {
-                Some(start_time) => start_time,
-                None => return TimerState::Unstarted,
-            };
+            let now = Utc::now();
 
-            let expected_end_time = match start_time.checked_add_signed(self.length) {
-                Some(end_time) => end_time,
-                None => return TimerState::OverflowError,
-            };
+            match self.time_of_pause {
+                Some(pause_time) => {
+                    return TimerState::Paused {
+                        remaining_duration: self.expected_end_time - pause_time,
+                    }
+                }
+                None => (),
+            }
 
-            let remaining_time = Utc::now() - expected_end_time;
-
-            if remaining_time.is_zero() {
+            if now > self.expected_end_time {
                 return TimerState::Complete;
             }
 
-            if self.paused {
-                return TimerState::Paused {
-                    remaining_duration: remaining_time,
-                };
-            }
             return TimerState::Running {
-                remaining_duration: remaining_time,
+                remaining_duration: self.expected_end_time - now,
             };
         }
+
+        pub fn pause(&mut self) {
+            match self.time_of_pause {
+                Some(pause_time) => {
+                    self.expected_end_time += Utc::now() - pause_time;
+                    self.time_of_pause = None
+                }
+                None => self.time_of_pause = Some(Utc::now()),
+            }
+        }
+
+        pub fn end_early(&mut self) {
+            self.expected_end_time = Utc::now();
+        }
     }
+
     #[derive(PartialEq, Eq, Debug)]
     pub enum TimerState {
-        Unstarted,
         Running { remaining_duration: Duration },
         Paused { remaining_duration: Duration },
         Complete,
-        OverflowError,
     }
+
     #[cfg(test)]
     mod tests {
         use super::*;
+        use std::mem;
 
         #[test]
-        fn get_timer_state_assert_timer_unstarted() {
-            let timer = Timer::new(Duration::seconds(2));
+        fn get_timer_state_start_timer_assert_running() {
+            let timer = Timer::start_from_duration(Duration::seconds(2));
             let result = timer.get_timer_state();
             assert_eq!(
-                TimerState::Unstarted,
-                result,
-                "Timer was not started, but it's state does not reflect that"
+                mem::discriminant(&TimerState::Running {
+                    remaining_duration: Duration::seconds(2)
+                }),
+                mem::discriminant(&result),
+                "The timer state did not default to running"
             );
         }
 
         #[test]
-        fn get_timer_state_start_timer_assert_running() {
-            let timer = Timer::new(Duration::seconds(2));
+        fn get_timer_state_pause_timer_assert_paused() {
+            let mut timer = Timer::start_from_duration(Duration::seconds(2));
+            timer.pause();
+            let result = timer.get_timer_state();
+            assert_eq!(
+                mem::discriminant(&TimerState::Paused {
+                    remaining_duration: Duration::seconds(2)
+                }),
+                mem::discriminant(&result),
+                "The timer was paused but did not return the paused state"
+            );
+        }
+
+        #[test]
+        fn get_timer_state_pause_timer_assert_not_running() {
+            let mut timer = Timer::start_from_duration(Duration::seconds(2));
+            timer.pause();
+            let result = timer.get_timer_state();
+            assert_ne!(
+                mem::discriminant(&TimerState::Running {
+                    remaining_duration: Duration::seconds(2)
+                }),
+                mem::discriminant(&result),
+                "The timer was running after being paused"
+            );
         }
     }
     /*
